@@ -1,0 +1,41 @@
+name: PD2 Corrupted Zone Alert
+
+on:
+  schedule:
+    - cron: '0,15,30,45 * * * *'
+  workflow_dispatch: # Allow manual trigger and external cron services
+
+jobs:
+  check-and-alert:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: pip install requests
+
+      - name: Restore message ID cache
+        uses: actions/cache/restore@v4
+        with:
+          path: message_ids.json
+          key: discord-message-ids-${{ github.run_id }}
+          restore-keys: |
+            discord-message-ids-
+
+      - name: Check Corrupted Zone and send alert
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+        run: python scripts/send_discord_alert.py
+
+      - name: Save message ID cache
+        uses: actions/cache/save@v4
+        with:
+          path: message_ids.json
+          key: discord-message-ids-${{ github.run_id }}
